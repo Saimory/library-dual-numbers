@@ -88,6 +88,7 @@ class Dual(val real: Double, val epsilon: Double) {
 
 }
 
+
 object Dual {
   // Метод для создания дуального числа
   def apply(real: Double, epsilon: Double): Dual = new Dual(real, epsilon)
