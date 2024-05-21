@@ -9,7 +9,7 @@ class Dual(val real: Double, val epsilon: Double) {
   def >(other: Dual): Boolean = real > other.real
   def <(other: Dual): Boolean = real < other.real
   def ==(other: Dual): Boolean = real == other.real && epsilon == other.epsilon
-  def unary_- : Dual = new Dual(-real, -epsilon)
+  def unary_- : Dual = Dual(-this.real, -this.epsilon)  // Добавлен унарный минус
 
   def >(other: Double): Boolean = real > other
   def <(other: Double): Boolean = real < other
