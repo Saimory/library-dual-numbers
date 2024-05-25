@@ -186,14 +186,6 @@ val root = newtonMethod(equation)(1.0)
 println(s"Корень уравнения z^2 - 2 = 0: $root")
 
 
-// Пример использования:
-def equation(z: Dual): Dual = z * z - Dual.toDual(2) // Решаем уравнение z^2 - 2 = 0
-val root = newtonMethod(equation, 1.0)
-println(s"Корень уравнения z^2 - 2 = 0: $root")
-
-
-
-
 // Численное интегрирование с чувствительностью к параметрам
 
 def trapezoidalRuleWithDuals(f: Dual => Dual, a: Dual, b: Dual, n: Int): Dual = {
@@ -211,20 +203,24 @@ println(s"Производная интеграла по начальному з
 
 // Градиентный спуск с использованием дуальных чисел
 
-def gradientDescent(f: Dual => Dual, learningRate: Double = 0.01, tolerance: Double = 1e-7, maxIterations: Int = 1000): Double => Double = {
-  @tailrec
-  def iterate(x: Double, iteration: Int): Double = {
-    val fx = f(Dual.variable(x))
-    if (Math.abs(fx.derivative) < tolerance || iteration >= maxIterations) x
-    else iterate(x - learningRate * fx.derivative, iteration + 1)
+def gradientDescent(f: Dual => Dual, initial: Dual, learningRate: Double, iterations: Int): Dual = {
+  var x = initial
+  for (_ <- 0 until iterations) {
+    val gradient = f(x).derivative // Производная функции в текущей точке
+    x = Dual(x.real - learningRate * gradient, x.epsilon)
   }
-  initialGuess => iterate(initialGuess, 0)
+  x
 }
 
-// Пример использования:
-val costFunction: Dual => Dual = z => (z - Dual.toDual(3)) * (z - Dual.toDual(3))
-val minimum = gradientDescent(costFunction)(0.0)
-println(s"Минимум функции (z - 3)^2: $minimum")
+  // Функция, которую мы хотим минимизировать: f(x) = (x-3)^2
+  def f(x: Dual): Dual = (x - Dual(5, 0)).pow(2)
+
+  val initial = Dual.variable(0) // Начальное значение x = 0
+  val learningRate = 0.1 // Скорость обучения
+  val iterations = 100 // Количество итераций
+
+  val result = gradientDescent(f, initial, learningRate, iterations)
+  println(s"Оптимальное значение x: ${result.real}")
 
 
 // Численное решение обыкновенных дифференциальных уравнений (ОДУ) метод Рунге-Кутты 4 порядка
@@ -251,6 +247,7 @@ val stepSize = 0.01
 val solutionDual = rk4Method(diffEq, y0Dual, x0Dual, xEndDual, stepSize)
 println(s"Решение дифференциального уравнения dy/dx = x + y при y(0) = 1 методом Рунге-Кутты: $solutionDual")
 println(s"Значение производной решения при x = 1: ${solutionDual.derivative}")
+
 
 /*
 Предположим, что у нас есть автомобиль, движущийся по траектории,
