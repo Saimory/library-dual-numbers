@@ -212,7 +212,7 @@ def gradientDescent(f: Dual => Dual, initial: Dual, learningRate: Double, iterat
   x
 }
 
-  // Функция, которую мы хотим минимизировать: f(x) = (x-3)^2
+  // Функция, которую мы хотим минимизировать: f(x) = (x-5)^2
   def f(x: Dual): Dual = (x - Dual(5, 0)).pow(2)
 
   val initial = Dual.variable(0) // Начальное значение x = 0
