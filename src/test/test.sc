@@ -1,6 +1,7 @@
 import com.example.dualnumber.Dual
 import scala.math._
 import scala.util.Random
+import scala.annotation.tailrec
 
 // Создание дуального числа
 val dualNumber = Dual(3.0, 2.0)
@@ -75,12 +76,6 @@ println("Преобразование в обычное число: " + toDouble
 val matrix = dualNumber.printMatrix(dualNumber)
 
 
-
-
-
-
-
-
 // Для примера использования библиотеки дифференцируем функцию
 
 // Обычный способ
@@ -100,8 +95,8 @@ val const3 = Dual.toDual(3)
 val result = const3 + Dual(5, 1) * Dual(5, 1).pow(2).log
 
 println("Значение функции f(x) в точке x = 5: " + result.real)
-println("Значение производной f'(x) в точке x = 5: " + result.derivative)
-
+println("Значение производной f'(x) в точке x = 5: " + result)
+/*
 // Создание и обучение нейронной сети для аппроксимации функции синуса на заданном интервале.
 class Neuron(var inputWeights: Array[Dual]) {
   // Метод активации нейрона.
@@ -170,8 +165,133 @@ testValues.zip(predictions).zip(correctValues).foreach {
   case ((x, prediction), correctValue) =>
     println(f"Предсказанное значение для sin($x%.2f): $prediction%.5f, Правильное значение: $correctValue%.5f")
 }
+ */
+
+
+// Метод Ньютона для нахождения корня уравнения
+
+def newtonMethod(f: Dual => Dual, tolerance: Double = 1e-7, maxIterations: Int = 100): Double => Double = {
+  @tailrec
+  def iterate(x: Double, iteration: Int): Double = {
+    val fx = f(Dual.variable(x))
+    if (Math.abs(fx.real) < tolerance || iteration >= maxIterations) x
+    else iterate(x - fx.real / fx.derivative, iteration + 1)
+  }
+  initialGuess => iterate(initialGuess, 0)
+}
+
+// Пример использования:
+val equation: Dual => Dual = z => z * z - Dual.toDual(2) // Решаем уравнение z^2 - 2 = 0
+val root = newtonMethod(equation)(1.0)
+println(s"Корень уравнения z^2 - 2 = 0: $root")
+
+
+// Пример использования:
+def equation(z: Dual): Dual = z * z - Dual.toDual(2) // Решаем уравнение z^2 - 2 = 0
+val root = newtonMethod(equation, 1.0)
+println(s"Корень уравнения z^2 - 2 = 0: $root")
 
 
 
 
+// Численное интегрирование с чувствительностью к параметрам
+
+def trapezoidalRuleWithDuals(f: Dual => Dual, a: Dual, b: Dual, n: Int): Dual = {
+  val h = (b.real - a.real) / n
+  val sum = (1 until n).map(i => f(Dual.variable(a.real + i * h)).real).sum
+  Dual(0.5 * (f(a).real + f(b).real) + sum * h, 0.5 * (f(a).derivative + f(b).derivative) + sum * h)
+}
+
+// Пример использования:
+val integrand: Dual => Dual = z => z * z
+val integral = trapezoidalRuleWithDuals(integrand, Dual.variable(0.0), Dual.variable(1.0), 1000)
+println(s"Численное интегрирование функции z^2 на интервале [0, 1]: ${integral.real}")
+println(s"Производная интеграла по начальному значению: ${integral.derivative}")
+
+
+// Градиентный спуск с использованием дуальных чисел
+
+def gradientDescent(f: Dual => Dual, learningRate: Double = 0.01, tolerance: Double = 1e-7, maxIterations: Int = 1000): Double => Double = {
+  @tailrec
+  def iterate(x: Double, iteration: Int): Double = {
+    val fx = f(Dual.variable(x))
+    if (Math.abs(fx.derivative) < tolerance || iteration >= maxIterations) x
+    else iterate(x - learningRate * fx.derivative, iteration + 1)
+  }
+  initialGuess => iterate(initialGuess, 0)
+}
+
+// Пример использования:
+val costFunction: Dual => Dual = z => (z - Dual.toDual(3)) * (z - Dual.toDual(3))
+val minimum = gradientDescent(costFunction)(0.0)
+println(s"Минимум функции (z - 3)^2: $minimum")
+
+
+// Численное решение обыкновенных дифференциальных уравнений (ОДУ) метод Рунге-Кутты 4 порядка
+def rk4Method(f: (Dual, Dual) => Dual, y0: Dual, x0: Dual, xEnd: Dual, stepSize: Double): Dual = {
+  var x = x0
+  var y = y0
+  while (x.real < xEnd.real) {
+    val k1 = f(x, y)
+    val k2 = f(x + Dual.toDual(stepSize / 2), y + k1 * Dual.toDual(stepSize / 2))
+    val k3 = f(x + Dual.toDual(stepSize / 2), y + k2 * Dual.toDual(stepSize / 2))
+    val k4 = f(x + Dual.toDual(stepSize), y + k3 * Dual.toDual(stepSize))
+    y = y + (k1 + k2 * Dual.toDual(2) + k3 * Dual.toDual(2) + k4) * Dual.toDual(stepSize / 6)
+    x = x + Dual.toDual(stepSize)
+  }
+  y
+}
+
+// Пример использования
+def diffEq(x: Dual, y: Dual): Dual = x + y
+val y0Dual = Dual(1.0, 1.0)  // y0 = 1.0, с производной 1.0
+val x0Dual = Dual(0.0, 0.0)  // x0 = 0.0, с производной 0.0
+val xEndDual = Dual(1.0, 0.0) // xEnd = 1.0, с производной 0.0
+val stepSize = 0.01
+val solutionDual = rk4Method(diffEq, y0Dual, x0Dual, xEndDual, stepSize)
+println(s"Решение дифференциального уравнения dy/dx = x + y при y(0) = 1 методом Рунге-Кутты: $solutionDual")
+println(s"Значение производной решения при x = 1: ${solutionDual.derivative}")
+
+/*
+Предположим, что у нас есть автомобиль, движущийся по траектории,
+описанной функцией положения x(t), где t — время. Нам необходимо
+оптимизировать траекторию движения автомобиля таким образом,
+чтобы минимизировать его суммарную энергию, затраченную на движение.
+Функция энергии задается как интеграл от квадрата скорости
+ */
+
+object CarEnergyOptimization {
+  val T = 10.0 // Конечное время
+
+  // Функция положения
+  def position(t: Dual): Dual = {
+    Dual.constant(10) * t.sin + Dual.constant(5) * t
+  }
+  // Энергия вычисляется как квадрат скорости
+  def energy(v: Dual): Dual = {
+    v * v
+  }
+
+  def integrateEnergy(dt: Double): Double = {
+    var totalEnergy = 0.0
+    var t = 5.0
+    while (t <= T) {
+      val dualT = Dual.variable(t)
+      val pos = position(dualT)
+      val vel = pos.epsilon
+      val e = energy(Dual(vel, 0))
+      totalEnergy += e.real * dt
+      t += dt
+    }
+    totalEnergy
+  }
+
+  def main(args: Array[String]): Unit = {
+    val dt = 0.01
+    val totalEnergy = integrateEnergy(dt)
+    println(f"Суммарная энергия: $totalEnergy%.4f")
+  }
+}
+
+CarEnergyOptimization.main(Array())
 

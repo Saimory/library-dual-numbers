@@ -71,7 +71,6 @@ class Dual(val real: Double, val epsilon: Double) {
 
 object Dual {
   def apply(real: Double, epsilon: Double): Dual = new Dual(real, epsilon)
-  def variable(name: String): Dual = new Dual(0, 1)
   def toDual(value: Double): Dual = Dual(value, 0)
   def variable(real: Double): Dual = new Dual(real, 1)
   def constant(real: Double): Dual = new Dual(real, 0)
